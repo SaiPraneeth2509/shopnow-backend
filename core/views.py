@@ -1,11 +1,12 @@
 from django.shortcuts import render
-from rest_framework import generics, status
+from rest_framework import generics, status, permissions
 from rest_framework.response import Response
 from rest_framework_simplejwt.views import TokenObtainPairView
 from django.contrib.auth import get_user_model
 from django.core.mail import send_mail
 from django.conf import settings
-from .serializers import UserSerializer, CustomTokenObtainPairSerializer, PasswordResetSerializer
+from .models import Order 
+from .serializers import UserSerializer, CustomTokenObtainPairSerializer, PasswordResetSerializer, UserProfileSerializer
 
 # Create your views here.
 User = get_user_model()
@@ -53,3 +54,33 @@ class PasswordResetView(generics.GenericAPIView):
             {"message": "Password reset instructions have been sent to your email."},
             status=status.HTTP_200_OK,
         )
+    
+class ProfileView(generics.RetrieveUpdateAPIView):
+    serializer_class = UserProfileSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_object(self):
+        return self.request.user
+
+    def retrieve(self, request, *args, **kwargs):
+        try:
+            user = self.get_object()
+            orders = Order.objects.filter(user=user) 
+            serializer = self.get_serializer(user)
+            return Response({
+                "user": serializer.data,
+                "orders": [
+                    {
+                        "id": order.id,
+                        "date": order.created_at.strftime("%Y-%m-%d"),
+                        "total": float(order.total_price),  
+                    }
+                    for order in orders
+                ],
+            })
+        except Exception as e:
+            print(f"Error in ProfileView: {e}")
+            return Response(
+                {"error": "An error occurred while fetching the profile."},
+                status=500,
+            )
