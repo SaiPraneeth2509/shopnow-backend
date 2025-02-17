@@ -124,10 +124,7 @@ def cart(request):
             "total_items": cart_items.count(),
         }, status=status.HTTP_200_OK)
     except Cart.DoesNotExist:
-        return Response(
-            {"error": "Cart not found"},
-            status=status.HTTP_404_NOT_FOUND,
-        )
+        return Response({"total_items": 0, "items": []}, status=status.HTTP_200_OK)
 
 
 @api_view(["POST"])
