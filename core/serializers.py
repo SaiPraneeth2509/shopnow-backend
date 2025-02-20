@@ -3,6 +3,8 @@ from rest_framework import serializers
 from django.contrib.auth import get_user_model
 from django.contrib.auth.password_validation import validate_password
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
+from .models import Order,OrderItem
+from products.serializers import ProductSerializer
 
 User = get_user_model()
 
@@ -52,3 +54,19 @@ class UserProfileSerializer(serializers.ModelSerializer):
         instance.phone = validated_data.get('phone', instance.phone)
         instance.save()
         return instance
+
+class OrderItemSerializer(serializers.ModelSerializer):
+    product = ProductSerializer() 
+
+    class Meta:
+        model = OrderItem
+        fields = ["product", "quantity"]
+
+
+class OrderSerializer(serializers.ModelSerializer):
+    user = UserSerializer(read_only=True)
+    items = OrderItemSerializer(many=True) 
+
+    class Meta:
+        model = Order
+        fields = ["id", "user", "total_price", "created_at", "items"]

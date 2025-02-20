@@ -165,3 +165,9 @@ EMAIL_HOST_USER = config('EMAIL_HOST_USER')
 EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD')
 DEFAULT_FROM_EMAIL = config('DEFAULT_FROM_EMAIL')
 FRONTEND_URL = config('FRONTEND_URL', default='http://localhost:5173')
+
+
+# settings.py
+PAYPAL_MODE = "sandbox"  # Use "live" for production
+PAYPAL_CLIENT_ID = "AeKSDzu-r1jdEJjVGSR8Uo9c4FwOFgnAyYhnjB5m0ae7UVrVhxK6p2bpaHUNjENr8qStRuEe_06l8Gd5"
+PAYPAL_CLIENT_SECRET = "ENcaSJsAaIBSPWFv5SoS3awT53ouU3Pk--g9vcp2co9YEClAVbiasTeEzuU2XtDCyV0224irFjLlosEO"

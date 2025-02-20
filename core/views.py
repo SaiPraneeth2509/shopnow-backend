@@ -1,46 +1,40 @@
-from django.shortcuts import render
-from rest_framework import generics, status, permissions
+from django.shortcuts import get_object_or_404
+from rest_framework import status, permissions
+from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 from rest_framework_simplejwt.views import TokenObtainPairView
 from django.contrib.auth import get_user_model
 from django.core.mail import send_mail
 from django.conf import settings
-from .models import Order 
-from .serializers import UserSerializer, CustomTokenObtainPairSerializer, PasswordResetSerializer, UserProfileSerializer
+from .models import Order
+from .serializers import (
+    UserSerializer,
+    CustomTokenObtainPairSerializer,
+    PasswordResetSerializer,
+    UserProfileSerializer,
+    OrderSerializer,
+)
 
-# Create your views here.
 User = get_user_model()
 
-class RegisterView(generics.CreateAPIView):
-    queryset = User.objects.all()
-    serializer_class = UserSerializer
-
-    def create(self, request, *args, **kwargs):
-        serializer = self.get_serializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        self.perform_create(serializer)
-        headers = self.get_success_headers(serializer.data)
-        return Response(
-            {"message": "User registered successfully."},
-            status=status.HTTP_201_CREATED,
-            headers=headers,
-        )
+@api_view(["POST"])
+def register(request):
+    serializer = UserSerializer(data=request.data)
+    if serializer.is_valid():
+        serializer.save()
+        return Response({"message": "User registered successfully."}, status=status.HTTP_201_CREATED)
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 class LoginView(TokenObtainPairView):
     serializer_class = CustomTokenObtainPairSerializer
 
-class PasswordResetView(generics.GenericAPIView):
-    serializer_class = PasswordResetSerializer
+@api_view(["POST"])
+def password_reset(request):
+    serializer = PasswordResetSerializer(data=request.data)
+    if serializer.is_valid():
+        email = serializer.validated_data["email"]
+        user = get_object_or_404(User, email=email)
 
-    def post(self, request, *args, **kwargs):
-        serializer = self.get_serializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-
-        email = serializer.validated_data['email']
-        user = User.objects.get(email=email)
-
-        # Generate a password reset token (you can use Django's built-in password reset tools)
-        # For simplicity, we'll just send an email with a link to reset the password.
         reset_link = f"{settings.FRONTEND_URL}/reset-password?email={email}"
         send_mail(
             "Password Reset Request",
@@ -54,33 +48,27 @@ class PasswordResetView(generics.GenericAPIView):
             {"message": "Password reset instructions have been sent to your email."},
             status=status.HTTP_200_OK,
         )
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(["GET", "PUT"])
+def profile(request):
+    user = request.user
+
+    if request.method == "GET":
+        orders = Order.objects.filter(user=user)
+        user_serializer = UserProfileSerializer(user)
+        order_serializer = OrderSerializer(orders, many=True)  # Serialize orders with items
+
+        return Response({
+            "user": user_serializer.data,
+            "orders": order_serializer.data,  # Include order details with items
+        })
+
+    elif request.method == "PUT":
+        serializer = UserProfileSerializer(user, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response({"message": "Profile updated successfully.", "user": serializer.data})
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     
-class ProfileView(generics.RetrieveUpdateAPIView):
-    serializer_class = UserProfileSerializer
-    permission_classes = [permissions.IsAuthenticated]
 
-    def get_object(self):
-        return self.request.user
-
-    def retrieve(self, request, *args, **kwargs):
-        try:
-            user = self.get_object()
-            orders = Order.objects.filter(user=user) 
-            serializer = self.get_serializer(user)
-            return Response({
-                "user": serializer.data,
-                "orders": [
-                    {
-                        "id": order.id,
-                        "date": order.created_at.strftime("%Y-%m-%d"),
-                        "total": float(order.total_price),  
-                    }
-                    for order in orders
-                ],
-            })
-        except Exception as e:
-            print(f"Error in ProfileView: {e}")
-            return Response(
-                {"error": "An error occurred while fetching the profile."},
-                status=500,
-            )
