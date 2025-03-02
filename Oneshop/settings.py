@@ -65,7 +65,7 @@ CORS_ALLOWED_ORIGINS = [
 "http://localhost:5174",
 "http://localhost:5175",
 "https://shopnow-xy9z.onrender.com",
-"https://saipraneeth2509.github.io/shopnow-app-frontend/",
+"https://saipraneeth2509.github.io/shopnow-app-frontend",
 ]
 
 ROOT_URLCONF = 'Oneshop.urls'
