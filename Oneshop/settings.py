@@ -29,7 +29,7 @@ SECRET_KEY = 'django-insecure-fiv$=q^nn%y$#qpq2$k9yyi8*xc9q^5t-yfwkr5t8nchxdy!3v
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ["shopnow-api-sigy.onrender.com","localhost","127.0.0.1"]
 
 
 # Application definition
